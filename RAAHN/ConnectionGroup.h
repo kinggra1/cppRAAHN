@@ -1,6 +1,7 @@
 #pragma once
 #include "ModulationSignal.h"
 #include "ConnectionGroup.h"
+#include "NeuronGroup.h"
 #include <string>
 #include <math.h>
 
@@ -24,6 +25,7 @@ namespace Raahn
 
 	class ConnectionGroup
 	{
+	public:
 		const double DEFAULT_LEARNING_RATE = 0.1;
 		unsigned sampleUsageCount;
 

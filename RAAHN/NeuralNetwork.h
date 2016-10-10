@@ -3,6 +3,10 @@
 #include "NeuronGroup.h"
 #include "TrainingMethod.h"
 #include <vector>
+#include <queue>
+
+using std::queue;
+using std::vector;
 
 namespace Raahn
 {
@@ -12,7 +16,7 @@ namespace Raahn
 
 		
 
-		delegate double ActivationFunctionType(double x);
+		// TODO: delegate double ActivationFunctionType(double x);
 
 		const unsigned DEFAULT_HISTORY_BUFFER_SIZE = 1;
 
@@ -23,15 +27,15 @@ namespace Raahn
 		const double WEIGHT_RANGE_SCALE = 6.0;
 		const double DOUBLE_WEIGHT_RANGE = 2.0;
 
-		static readonly Random rand = new Random();
+		// TODO: static readonly Random rand = new Random();
 
 		bool useNovelty;
 		//Default to using the logistic function.
-		ActivationFunctionType activation = Activation.Logistic;
-		ActivationFunctionType activationDerivative = Activation.LogisticDerivative;
+		// TODO: ActivationFunctionType activation = Activation.Logistic;
+		// TODO: ActivationFunctionType activationDerivative = Activation.LogisticDerivative;
 
 
-		NeuralNetwork();
+		NeuralNetwork() {};
 
 		NeuralNetwork(unsigned historySize, bool useNoveltyBuffer);
 
@@ -49,7 +53,7 @@ namespace Raahn
 		void PropagateSignal();
 
 		//Returns autoencoder error.
-		void Train(); UpdateOnlineError(error);
+		void Train();
 
 		//Resets the weights and every neuron of the neural network.
 		void Reset();
@@ -67,18 +71,18 @@ namespace Raahn
 		//Returns false if one or both of the groups do not exist.
 		//Returns true if the groups could be connected.
 		//Sample count refers to how many training samples should be used each time Train() is called.
-		bool ConnectGroups(NeuronGroup.Identifier input, NeuronGroup.Identifier output,
-			ConnectionGroup.TrainFunctionType trainMethod, int modulationIndex,
+		bool ConnectGroups(NeuronGroup::Identifier input, NeuronGroup::Identifier output,
+			ConnectionGroup::TrainFunctionType trainMethod, int modulationIndex,
 			unsigned sampleCount, double learningRate, bool useBias);
 
 		//Gets the number of neurons in a group. Returns 0 if the group is invalid.
-		unsigned GetGroupNeuronCount(NeuronGroup.Identifier ident);
+		unsigned GetGroupNeuronCount(NeuronGroup::Identifier ident);
 
 		//Returns the index of the neuron group.
-		int AddNeuronGroup(unsigned neuronCount, NeuronGroup.Type type);
+		int AddNeuronGroup(unsigned neuronCount, NeuronGroup::Type type);
 
 		//Returns double.Nan if the neuron or neuron group does not exist.
-		double GetNeuronValue(NeuronGroup.Identifier ident, unsigned neuronIndex);
+		double GetNeuronValue(NeuronGroup::Identifier ident, unsigned neuronIndex);
 
 		//Returns double.Nan if the neuron or neuron group does not exist.
 		double GetOutputValue(unsigned groupIndex, unsigned index);
@@ -93,18 +97,21 @@ namespace Raahn
 		double GetOnlineError();
 
 		//Get neuron values of a neuron group.
-		vector<double> GetNeuronValues(NeuronGroup.Identifier nGroup);
+		vector<double> GetNeuronValues(NeuronGroup::Identifier nGroup);
 
 		//Get the strength of connections in a connection group.
-		vector<double> GetWeights(NeuronGroup.Identifier fromGroup, NeuronGroup.Identifier toGroup);
+		vector<double> GetWeights(NeuronGroup::Identifier fromGroup, NeuronGroup::Identifier toGroup);
 
 		//Returns the Ids of all groups connected by outgoing connections to the specifed group.
-		vector<NeuronGroup.Identifier> GetGroupsConnected(NeuronGroup.Identifier connectedTo);
+		vector<NeuronGroup::Identifier> GetGroupsConnected(NeuronGroup::Identifier connectedTo);
 
 
 		private:
 
 			class NoveltyBufferOccupant;
+			class DistanceDescription;
+
+			/*
 			//Description of a distance between two novelty buffer occupants.
 			class DistanceDescription : IComparable<DistanceDescription>
 			{
@@ -131,36 +138,41 @@ namespace Raahn
 				}
 			};
 
+			*/
 
+
+
+		/*
 		class NoveltyBufferOccupant : IComparable<NoveltyBufferOccupant>
+		{
+		public:
+			double noveltyScore;
+			vector<double> experience;
+			//Ordered from nearest to farthest.
+			Linkedvector<DistanceDescription> distanceDescriptions;
+
+			NoveltyBufferOccupant()
 			{
-			public:
-				double noveltyScore;
-				vector<double> experience;
-				//Ordered from nearest to farthest.
-				Linkedvector<DistanceDescription> distanceDescriptions;
+				noveltyScore = 0.0;
 
-				NoveltyBufferOccupant()
-				{
-					noveltyScore = 0.0;
-
-					experience = null;
-					distanceDescriptions = new Linkedvector<DistanceDescription>();
-				}
-
-				//Sort NoveltyBufferOccupant by noveltyScore.
-				int CompareTo(NoveltyBufferOccupant cmp)
-				{
-					if (cmp == null)
-						return 1;
-					if (noveltyScore > cmp.noveltyScore)
-						return 1;
-					if (noveltyScore < cmp.noveltyScore)
-						return -1;
-
-					return 0;
-				}
+				experience = null;
+				distanceDescriptions = new Linkedvector<DistanceDescription>();
 			}
+
+			//Sort NoveltyBufferOccupant by noveltyScore.
+			int CompareTo(NoveltyBufferOccupant cmp)
+			{
+				if (cmp == null)
+					return 1;
+				if (noveltyScore > cmp.noveltyScore)
+					return 1;
+				if (noveltyScore < cmp.noveltyScore)
+					return -1;
+
+				return 0;
+			}
+		};
+		*/
 
 		//Constructs NeuralNetwork.
 		void Construct(unsigned historySize, double outputNoiseMag, double weightNoiseMag, bool useNoveltyBuffer);
@@ -211,8 +223,8 @@ namespace Raahn
 		vector<NeuronGroup*> outputGroups;
 		//Ordered from least novel to most novel.
 		vector<NoveltyBufferOccupant*> noveltyBuffer;
-		Queue<double> errorBuffer;
-		Queue<vector<double>> historyBuffer;
+		queue<double> errorBuffer;
+		queue<vector<double>> historyBuffer;
 
 
 		//Whether or not to use a novelty buffer.

@@ -2,6 +2,7 @@
 //
 
 #include "stdafx.h"
+#include "NeuralNetwork.h"
 
 
 int main()

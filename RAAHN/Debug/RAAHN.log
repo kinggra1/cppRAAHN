@@ -1,2 +1,7 @@
-﻿  ConnectionGroup.cpp
-  RAAHN.vcxproj -> C:\Users\Grant\Documents\MSU\Grad\FS\RAAHN\cpp\RAAHN\Debug\RAAHN.exe
+﻿  RAAHN.cpp
+c:\users\grant\documents\msu\grad\fs\raahn\cpp\raahn\raahn\raahn.cpp(10): error C3423: Use of incomplete type 'NeuralNetwork'
+  c:\users\grant\documents\msu\grad\fs\raahn\cpp\raahn\raahn\trainingmethod.h(8): note: see declaration of 'NeuralNetwork'
+  Generating Code...
+  Compiling...
+  ConnectionGroup.cpp
+  Generating Code...
