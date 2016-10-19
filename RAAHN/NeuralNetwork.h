@@ -2,11 +2,14 @@
 #include "ConnectionGroup.h"
 #include "NeuronGroup.h"
 #include "TrainingMethod.h"
+#include "Activation.h"
 #include <vector>
 #include <queue>
+#include <random>
 
 using std::queue;
 using std::vector;
+using std::uniform_real_distribution; using std::default_random_engine;
 
 namespace Raahn
 {
@@ -16,7 +19,9 @@ namespace Raahn
 
 		
 
-		// TODO: delegate double ActivationFunctionType(double x);
+		// FROM C# for reference: delegate double ActivationFunctionType(double x);
+		typedef double(*ActivationFunctionType)(double);
+
 
 		const unsigned DEFAULT_HISTORY_BUFFER_SIZE = 1;
 
@@ -27,12 +32,17 @@ namespace Raahn
 		const double WEIGHT_RANGE_SCALE = 6.0;
 		const double DOUBLE_WEIGHT_RANGE = 2.0;
 
-		// TODO: static readonly Random rand = new Random();
+
+		// replacement of Random.NextDouble()
+		// default initialization gives us values in the range [0, 1) which is desired
+		const static uniform_real_distribution<double> rand;
+		const static default_random_engine eng;
+
 
 		bool useNovelty;
 		//Default to using the logistic function.
-		// TODO: ActivationFunctionType activation = Activation.Logistic;
-		// TODO: ActivationFunctionType activationDerivative = Activation.LogisticDerivative;
+		ActivationFunctionType activation = Activation::Logistic;
+		ActivationFunctionType activationDerivative = Activation::LogisticDerivative;
 
 
 		NeuralNetwork() {};
@@ -109,7 +119,27 @@ namespace Raahn
 		private:
 
 			class NoveltyBufferOccupant;
-			class DistanceDescription;
+
+			class DistanceDescription {
+			public:
+				DistanceDescription() {};
+				
+				bool operator>(const DistanceDescription &other) {
+					return (distance > other.distance);
+				}
+
+				bool operator<(const DistanceDescription &other) {
+					return (distance < other.distance);
+				}
+
+				bool operator==(const DistanceDescription &other) {
+					return (distance == other.distance);
+				}
+
+
+				double distance = 0.0;
+				NoveltyBufferOccupant *distanceOwner = nullptr;
+			};
 
 			/*
 			//Description of a distance between two novelty buffer occupants.
@@ -141,6 +171,28 @@ namespace Raahn
 			*/
 
 
+
+		class NoveltyBufferOccupant {
+		public:
+			NoveltyBufferOccupant() {};
+
+			bool operator>(const NoveltyBufferOccupant &other) {
+				return (noveltyScore > other.noveltyScore);
+			}
+
+			bool operator<(const NoveltyBufferOccupant &other) {
+				return (noveltyScore < other.noveltyScore);
+			}
+
+			bool operator==(const NoveltyBufferOccupant &other) {
+				return (noveltyScore == other.noveltyScore);
+			}
+
+
+			double noveltyScore = 0.0;
+			vector<double> experience;
+			vector<DistanceDescription*> distanceDescriptions;
+		};
 
 		/*
 		class NoveltyBufferOccupant : IComparable<NoveltyBufferOccupant>

@@ -29,11 +29,17 @@ namespace Raahn
 		const double DEFAULT_LEARNING_RATE = 0.1;
 		unsigned sampleUsageCount;
 
+		typedef double (*TrainFunctionType)(int modIndex, double learningRate, NeuralNetwork *ann,
+			NeuronGroup *inGroup, NeuronGroup *outGroup,
+			vector<Connection*> connections, vector<double> biasWeights);
+
+		/*
 		struct TrainFunctionType{
 			double operator()(int modIndex, double learningRate, NeuralNetwork *ann,
 				NeuronGroup *inGroup, NeuronGroup *outGroup,
 				vector<Connection*> connections, vector<double> biasWeights);
 		};
+		*/
 
 		ConnectionGroup(NeuralNetwork *network, NeuronGroup *inGroup, NeuronGroup *outGroup, bool useBias);
 
@@ -49,7 +55,7 @@ namespace Raahn
 
 		void SetLearningRate(double lRate);
 
-		void SetTrainingMethod(TrainFunctionType method);
+		void SetTrainingMethod(TrainFunctionType method) { trainingMethod = method; }
 
 		void ResetWeights();
 
@@ -61,7 +67,7 @@ namespace Raahn
 
 		double GetReconstructionError();
 
-		TrainFunctionType GetTrainingMethod();
+		TrainFunctionType GetTrainingMethod() { return trainingMethod; }
 
 		bool UsesBiasWeights();
 
@@ -88,8 +94,12 @@ namespace Raahn
 			NeuralNetwork *ann;
 			NeuronGroup *inputGroup;
 			NeuronGroup *outputGroup;
+			TrainFunctionType trainingMethod;
+			
+			/*
 			double (*trainingMethod)(int modIndex, double learningRate, NeuralNetwork *ann,
 				NeuronGroup *inGroup, NeuronGroup *outGroup,
 				vector<Connection*> connections, vector<double> biasWeights);
+			*/
 	};
 }
