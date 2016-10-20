@@ -92,6 +92,8 @@ public:
 	//Returns the index of the neuron group.
 	int AddNeuronGroup(unsigned neuronCount, NeuronGroup::Type type);
 
+	double GetWeightCap() { return weightCap; }
+
 	//Returns double.Nan if the neuron or neuron group does not exist.
 	double GetNeuronValue(NeuronGroup::Identifier ident, unsigned neuronIndex);
 
@@ -280,6 +282,14 @@ public:
 
 	double getOutputNoiseMagnitude() {
 		return outputNoiseMagnitude;
+	}
+
+	double getWeightNoiseRange() {
+		return weightNoiseRange;
+	}
+
+	double getWeightNoiseMagnitude() {
+		return weightNoiseMagnitude;
 	}
 
 	unsigned getNoveltyBufferSize() {
