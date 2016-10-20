@@ -30,7 +30,7 @@ public:
 		}
 	};
 
-	const int INVALID_NEURON_INDEX = -1;
+	static const int INVALID_NEURON_INDEX = -1;
 
 	int index;
 	bool computed;
@@ -67,7 +67,7 @@ public:
 
 	unsigned GetNeuronCount();
 
-	vector<double> GetWeights(NeuronGroup::Identifier toGroup);
+	vector<double> GetWeights(NeuronGroup::Identifier *toGroup);
 
 	vector<NeuronGroup::Identifier> GetGroupsConnected();
 

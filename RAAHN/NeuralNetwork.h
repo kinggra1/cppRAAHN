@@ -46,7 +46,7 @@ public:
 	ActivationFunctionType activationDerivative = Activation::LogisticDerivative;
 
 
-	NeuralNetwork() {};
+	NeuralNetwork();
 
 	NeuralNetwork(unsigned historySize, bool useNoveltyBuffer);
 
@@ -61,7 +61,7 @@ public:
 	void SetExperience(unsigned index);
 
 	//Propagates the inputs completely and gets output.
-	void PropagateSignal() {};
+	void PropagateSignal();
 
 	//Returns autoencoder error.
 	void Train();
@@ -82,20 +82,20 @@ public:
 	//Returns false if one or both of the groups do not exist.
 	//Returns true if the groups could be connected.
 	//Sample count refers to how many training samples should be used each time Train() is called.
-	bool ConnectGroups(NeuronGroup::Identifier input, NeuronGroup::Identifier output,
+	bool ConnectGroups(NeuronGroup::Identifier *input, NeuronGroup::Identifier *output,
 		ConnectionGroup::TrainFunctionType trainMethod, int modulationIndex,
 		unsigned sampleCount, double learningRate, bool useBias);
 
 	//Gets the number of neurons in a group. Returns 0 if the group is invalid.
-	unsigned GetGroupNeuronCount(NeuronGroup::Identifier ident);
+	unsigned GetGroupNeuronCount(NeuronGroup::Identifier *ident);
 
 	//Returns the index of the neuron group.
 	int AddNeuronGroup(unsigned neuronCount, NeuronGroup::Type type);
 
-	double GetWeightCap() { return weightCap; }
+	double GetWeightCap();
 
 	//Returns double.Nan if the neuron or neuron group does not exist.
-	double GetNeuronValue(NeuronGroup::Identifier ident, unsigned neuronIndex);
+	double GetNeuronValue(NeuronGroup::Identifier *ident, unsigned neuronIndex);
 
 	//Returns double.Nan if the neuron or neuron group does not exist.
 	double GetOutputValue(unsigned groupIndex, unsigned index);
@@ -110,13 +110,13 @@ public:
 	double GetOnlineError();
 
 	//Get neuron values of a neuron group.
-	vector<double> GetNeuronValues(NeuronGroup::Identifier nGroup);
+	vector<double> GetNeuronValues(NeuronGroup::Identifier *nGroup);
 
 	//Get the strength of connections in a connection group.
-	vector<double> GetWeights(NeuronGroup::Identifier fromGroup, NeuronGroup::Identifier toGroup);
+	vector<double> GetWeights(NeuronGroup::Identifier *fromGroup, NeuronGroup::Identifier *toGroup);
 
 	//Returns the Ids of all groups connected by outgoing connections to the specifed group.
-	vector<NeuronGroup::Identifier> GetGroupsConnected(NeuronGroup::Identifier connectedTo);
+	vector<NeuronGroup::Identifier> GetGroupsConnected(NeuronGroup::Identifier *connectedTo);
 
 
 
@@ -236,29 +236,29 @@ public:
 	void Construct(unsigned historySize, double outputNoiseMag, double weightNoiseMag, bool useNoveltyBuffer);
 
 	//Set the inputs of the neural network to a given experience.
-	void SetExperience(vector<double> sample) {};
+	void SetExperience(vector<double> sample);
 
 	void UpdateOnlineError(double currentError);
 
 	//Add a new experience to the novelty buffer.
-	void AddNoveltyOccupant(NoveltyBufferOccupant newOccupant, vector<DistanceDescription> distDescriptions);
+	void AddNoveltyOccupant(NoveltyBufferOccupant *newOccupant, vector<DistanceDescription*> distDescriptions);
 
 	//Insert the distance if it is closer than the current farthest distance.
-	void TryInsertDistance(NoveltyBufferOccupant occupant, DistanceDescription distDesc);
+	void TryInsertDistance(NoveltyBufferOccupant *occupant, DistanceDescription *distDesc);
 
 	//Remove an experience from the novelty buffer.
-	void RemoveNoveltyOccupant(NoveltyBufferOccupant oldOccupant);
+	void RemoveNoveltyOccupant(NoveltyBufferOccupant *oldOccupant);
 
 	void UpdateNoveltyScores();
 
 	//Expensive computation of distances for an experience already in buffer.
-	void ComputeDistances(NoveltyBufferOccupant occupant);
+	void ComputeDistances(NoveltyBufferOccupant *occupant);
 
 	//Makes sure a type is INPUT, HIDDEN, or OUTPUT.
 	bool VerifyType(NeuronGroup::Type type);
 
 	//Makes sure an identifier specifies a neuron group within allvectorGroups.
-	bool VerifyIdentifier(NeuronGroup::Identifier ident);
+	bool VerifyIdentifier(NeuronGroup::Identifier *ident);
 
 	double ExpDistance(vector<double> exp, vector<double> compare);
 
@@ -325,13 +325,13 @@ private:
 	double outputNoiseRange;
 	double weightNoiseRange;
 	double averageError;
-	vector<vector<NeuronGroup*>> allvectorGroups;
+	vector<vector<NeuronGroup*>> allListGroups;
 	vector<NeuronGroup*> inputGroups;
 	vector<NeuronGroup*> hiddenGroups;
 	vector<NeuronGroup*> outputGroups;
 	//Ordered from least novel to most novel.
 	vector<NoveltyBufferOccupant*> noveltyBuffer;
-	queue<double> errorBuffer;
+	deque<double> errorBuffer;
 	deque<vector<double>> historyBuffer;
 
 

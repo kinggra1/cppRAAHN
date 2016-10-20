@@ -226,11 +226,11 @@ unsigned NeuronGroup::GetNeuronCount()
 	return count;
 }
 
-vector<double> NeuronGroup::GetWeights(NeuronGroup::Identifier toGroup)
+vector<double> NeuronGroup::GetWeights(NeuronGroup::Identifier *toGroup)
 {
 	for (unsigned i = 0; i < outgoingGroups.size(); i++)
 	{
-		if (outgoingGroups[i]->IsConnectedTo(toGroup))
+		if (outgoingGroups[i]->IsConnectedTo(*toGroup))
 			return outgoingGroups[i]->GetWeights();
 	}
 
