@@ -1,310 +1,278 @@
 #include "stdafx.h"
+#include "NeuralNetwork.h"
+#include "NeuronGroup.h"
+#include "ConnectionGroup.h"
+#include "TrainingMethod.h"
 
-/*using System;
-using System.Linq;
-using System.Collections.Generic;
+#include <vector>
+#include <algorithm>
 
-namespace Raahn
+using std::vector;
+using std::find;
+
+
+NeuronGroup::NeuronGroup(NeuralNetwork *network, Type t)
 {
-	public partial class NeuralNetwork
+	Construct(network, t);
+}
+
+NeuronGroup::NeuronGroup(unsigned count, NeuralNetwork *network, Type t)
+{
+	Construct(network, t);
+
+	AddNeurons(count);
+}
+
+void NeuronGroup::Construct(NeuralNetwork *network, Type t)
+{
+	ann = network;
+
+	averages = vector<double>();
+
+	computed = true;
+
+	useNoise = false;
+
+	neurons = vector<double>();
+
+	incomingGroups = vector<ConnectionGroup*>();
+	outgoingGroups = vector<ConnectionGroup*>();
+	outTrainRecent = vector<ConnectionGroup*>();
+	outTrainSeveral = vector<ConnectionGroup*>();
+}
+
+void NeuronGroup::AddNeurons(unsigned count)
+{
+	for (unsigned i = 0; i < count; i++)
+		neurons.push_back(DEFAULT_NEURON_VALUE);
+}
+
+void NeuronGroup::AddIncomingGroup(ConnectionGroup *incomingGroup)
+{
+	incomingGroups.push_back(incomingGroup);
+
+	ConnectionGroup::TrainFunctionType method = incomingGroup->GetTrainingMethod();
+
+	//Noise must be used for Hebbian trained connection groups.
+	//Noise is added after the activation function, so it has to
+	//be addded if there is at least one Hebbain trained connection group.
+	if (method == TrainingMethod::HebbianTrain)
+		useNoise = true;
+	else if (method == TrainingMethod::SparseAutoencoderTrain)
 	{
-		public class NeuronGroup
+		//if (averages == null)
+		if (averages.size() == 0)
 		{
-			public enum Type
-			{
-				NONE = -1,
-				INPUT = 0,
-				HIDDEN = 1,
-				OUTPUT = 2
-			}
+			int featureCount = neurons.size();
 
-			public struct Identifier
-			{
-				public int index;
-				public Type type;
-			}
+			averages = vector<double>(featureCount);
 
-			public const int INVALID_NEURON_INDEX = -1;
-			private const double DEFAULT_NEURON_VALUE = 0.0;
-			private const double DECAY_BASE = 0.01;
-
-			public int index;
-			public bool computed;
-			public NeuronGroup.Type type;
-			public List<double> neurons;
-			public List<double> averages;
-			private bool useNoise;
-			private List<ConnectionGroup> incomingGroups;
-			//All outgoing groups.
-			private List<ConnectionGroup> outgoingGroups;
-			//Outgoing groups that train only off the most recent experience.
-			private List<ConnectionGroup> outTrainRecent;
-			//Outgoing groups that train off of several randomly selected experiences.
-			private List<ConnectionGroup> outTrainSeveral;
-			private NeuralNetwork ann;
-
-			public NeuronGroup(NeuralNetwork network, Type t)
-			{
-				Construct(network, t);
-			}
-
-			public NeuronGroup(uint count, NeuralNetwork network, Type t)
-			{
-				Construct(network, t);
-
-				AddNeurons(count);
-			}
-
-			public void Construct(NeuralNetwork network, Type t)
-			{
-				ann = network;
-
-				averages = null;
-
-				computed = true;
-
-				useNoise = false;
-
-				neurons = new List<double>();
-
-				incomingGroups = new List<ConnectionGroup>();
-				outgoingGroups = new List<ConnectionGroup>();
-				outTrainRecent = new List<ConnectionGroup>();
-				outTrainSeveral = new List<ConnectionGroup>();
-			}
-
-			public void AddNeurons(uint count)
-			{
-				for (uint i = 0; i < count; i++)
-					neurons.Add(DEFAULT_NEURON_VALUE);
-			}
-
-			public void AddIncomingGroup(ConnectionGroup incomingGroup)
-			{
-				incomingGroups.Add(incomingGroup);
-
-				ConnectionGroup.TrainFunctionType method = incomingGroup.GetTrainingMethod();
-
-				//Noise must be used for Hebbian trained connection groups.
-				//Noise is added after the activation function, so it has to
-				//be addded if there is at least one Hebbain trained connection group.
-				if (method == TrainingMethod.HebbianTrain)
-					useNoise = true;
-				else if (method == TrainingMethod.SparseAutoencoderTrain)
-				{
-					if (averages == null)
-					{
-						int featureCount = neurons.Count;
-
-						averages = new List<double>(featureCount);
-
-						for (int i = 0; i < featureCount; i++)
-							averages.Add(DEFAULT_NEURON_VALUE);
-					}
-				}
-			}
-
-			//mostRecent refers to whether the group should train off of only the most recent experience.
-			public void AddOutgoingGroup(ConnectionGroup outgoingGroup, bool mostRecent)
-			{
-				outgoingGroups.Add(outgoingGroup);
-
-				//Should the group use the most recent example or several randomly selected ones.
-				if (mostRecent)
-					outTrainRecent.Add(outgoingGroup);
-				else
-					outTrainSeveral.Add(outgoingGroup);
-			}
-
-			public void UpdateAverages()
-			{
-				double decay = 0.0;
-				double exponent = 1.0 / (double)ann.historyBuffer.Count;
-
-				decay = Math.Pow(DECAY_BASE, exponent);
-
-				for (int i = 0; i < averages.Count; i++)
-					averages[i] = (decay * averages[i]) + ((1.0 - decay) * neurons[i]);
-			}
-
-			public void Reset()
-			{
-				for (int i = 0; i < neurons.Count; i++)
-					neurons[i] = 0.0;
-			}
-
-			public void ResetOutgoingGroups()
-			{
-				//Weights randomized between 0.0 and 1.0.
-				for (int i = 0; i < outgoingGroups.Count; i++)
-					outgoingGroups[i].ResetWeights();
-			}
-
-			public void ComputeSignal()
-			{
-				for (int i = 0; i < incomingGroups.Count; i++)
-					incomingGroups[i].PropagateSignal();
-
-				//Finish computing the signal by applying the activation function.
-				//Add noise if Hebbian trained connections are present.
-				if (useNoise)
-				{
-					for (int i = 0; i < neurons.Count; i++)
-					{
-						double noise = NeuralNetwork.rand.NextDouble() * ann.outputNoiseRange - ann.outputNoiseMagnitude;
-						neurons[i] = ann.activation(neurons[i]) + noise;
-					}
-				}
-				else
-				{
-					for (int i = 0; i < neurons.Count; i++)
-						neurons[i] = ann.activation(neurons[i]);
-				}
-
-				computed = true;
-			}
-
-			//Train groups which use the most recent experience.
-			public double TrainRecent()
-			{
-				if (outTrainRecent.Count < 1)
-					return TrainingMethod.NO_ERROR;
-
-				double error = 0.0;
-
-				for (int i = 0; i < outTrainRecent.Count; i++)
-				{
-					if (outTrainRecent[i].GetTrainingMethod() == TrainingMethod.SparseAutoencoderTrain)
-						UpdateAverages();
-
-					error += outTrainRecent[i].Train();
-				}
-
-				return error;
-			}
-
-			//Train groups which use several randomly selected experiences.
-			public double TrainSeveral()
-			{
-				if (outTrainSeveral.Count < 1)
-					return TrainingMethod.NO_ERROR;
-
-				double error = 0.0;
-
-				uint historyBufferCount = 0;
-
-				if (ann.useNovelty)
-					historyBufferCount = (uint)ann.noveltyBuffer.Count;
-				else
-					historyBufferCount = (uint)ann.historyBuffer.Count;
-
-				LinkedList<List<double>> samples = new LinkedList<List<double>>();
-
-				for (int i = 0; i < outTrainSeveral.Count; i++)
-				{
-					if (ann.useNovelty)
-					{
-						foreach(NoveltyBufferOccupant occupant in ann.noveltyBuffer)
-							samples.AddLast(occupant.experience);
-					}
-					else
-					{
-						foreach(List<double> sample in ann.historyBuffer)
-							samples.AddLast(sample);
-					}
-
-					uint sampleCount = outTrainSeveral[i].sampleUsageCount;
-
-					if (sampleCount > historyBufferCount)
-						sampleCount = historyBufferCount;
-
-					for (uint y = 0; y < sampleCount; y++)
-					{
-						//Select a random sample.
-						List<double> sample = samples.ElementAt(NeuralNetwork.rand.Next(samples.Count));
-						samples.Remove(sample);
-
-						ann.SetExperience(sample);
-						ann.PropagateSignal();
-
-						outTrainSeveral[i].UpdateAverages();
-
-						error += outTrainSeveral[i].Train();
-					}
-
-					//Divide by the number of samples used.
-					error /= sampleCount;
-
-					samples.Clear();
-				}
-
-				return error;
-			}
-
-			public uint GetNeuronCount()
-			{
-				uint count = (uint)neurons.Count;
-
-				for (int i = 0; i < outgoingGroups.Count; i++)
-				{
-					if (outgoingGroups[i].UsesBiasWeights())
-						return count + 1;
-				}
-
-				return count;
-			}
-
-			public List<double> GetWeights(NeuronGroup.Identifier toGroup)
-			{
-				for (int i = 0; i < outgoingGroups.Count; i++)
-				{
-					if (outgoingGroups[i].IsConnectedTo(toGroup))
-						return outgoingGroups[i].GetWeights();
-				}
-
-				return null;
-			}
-
-			public List<NeuronGroup.Identifier> GetGroupsConnected()
-			{
-				List<NeuronGroup.Identifier> groupsConnected = new List<NeuronGroup.Identifier>(outgoingGroups.Count);
-
-				for (int i = 0; i < outgoingGroups.Count; i++)
-				{
-					NeuronGroup.Identifier ident;
-					ident.type = outgoingGroups[i].GetOutputGroupType();
-					ident.index = outgoingGroups[i].GetOutputGroupIndex();
-
-					if (!groupsConnected.Contains(ident))
-						groupsConnected.Add(ident);
-				}
-
-				return groupsConnected;
-			}
-
-			//Returns true if the neuron was able to be removed, false otherwise.
-			public bool RemoveNeuron(uint index)
-			{
-				if (index < neurons.Count)
-				{
-					neurons.RemoveAt((int)index);
-					return true;
-				}
-				else
-					return false;
-			}
-
-			public double GetReconstructionError()
-			{
-				double error = 0.0;
-
-				for (int i = 0; i < outgoingGroups.Count; i++)
-					error += outgoingGroups[i].GetReconstructionError();
-
-				return error;
-			}
+			for (int i = 0; i < featureCount; i++)
+				averages.push_back(DEFAULT_NEURON_VALUE);
 		}
 	}
 }
 
-*/
+//mostRecent refers to whether the group should train off of only the most recent experience.
+void NeuronGroup::AddOutgoingGroup(ConnectionGroup *outgoingGroup, bool mostRecent)
+{
+	outgoingGroups.push_back(outgoingGroup);
+
+	//Should the group use the most recent example or several randomly selected ones.
+	if (mostRecent)
+		outTrainRecent.push_back(outgoingGroup);
+	else
+		outTrainSeveral.push_back(outgoingGroup);
+}
+
+void NeuronGroup::UpdateAverages()
+{
+	double decay = 0.0;
+	double exponent = 1.0 / (double)ann->getHistoryBufferSize();
+
+	decay = pow(DECAY_BASE, exponent);
+
+	for (unsigned i = 0; i < averages.size(); i++)
+		averages[i] = (decay * averages[i]) + ((1.0 - decay) * neurons[i]);
+}
+
+void NeuronGroup::Reset()
+{
+	for (unsigned i = 0; i < neurons.size(); i++)
+		neurons[i] = 0.0;
+}
+
+void NeuronGroup::ResetOutgoingGroups()
+{
+	//Weights randomized between 0.0 and 1.0.
+	for (unsigned i = 0; i < outgoingGroups.size(); i++)
+		outgoingGroups[i]->ResetWeights();
+}
+
+void NeuronGroup::ComputeSignal()
+{
+	for (unsigned i = 0; i < incomingGroups.size(); i++)
+		incomingGroups[i]->PropagateSignal();
+
+	//Finish computing the signal by applying the activation function.
+	//Add noise if Hebbian trained connections are present.
+	if (useNoise)
+	{
+		for (unsigned i = 0; i < neurons.size(); i++)
+		{
+			double noise = ann->NextDouble() * ann->getOutputNoiseRange() - ann->getOutputNoiseMagnitude();
+			neurons[i] = ann->activation(neurons[i]) + noise;
+		}
+	}
+	else
+	{
+		for (unsigned i = 0; i < neurons.size(); i++)
+			neurons[i] = ann->activation(neurons[i]);
+	}
+
+	computed = true;
+}
+
+//Train groups which use the most recent experience.
+double NeuronGroup::TrainRecent()
+{
+	if (outTrainRecent.size() < 1)
+		return TrainingMethod::NO_ERROR;
+
+	double error = 0.0;
+
+	for (unsigned i = 0; i < outTrainRecent.size(); i++)
+	{
+		if (outTrainRecent[i]->GetTrainingMethod() == TrainingMethod::SparseAutoencoderTrain)
+			UpdateAverages();
+
+		error += outTrainRecent[i]->Train();
+	}
+
+	return error;
+}
+
+//Train groups which use several randomly selected experiences.
+double NeuronGroup::TrainSeveral()
+{
+	if (outTrainSeveral.size() < 1)
+		return TrainingMethod::NO_ERROR;
+
+	double error = 0.0;
+
+	unsigned historyBufferCount = 0;
+
+	if (ann->useNovelty)
+		historyBufferCount = ann->getNoveltyBufferSize();
+	else
+		historyBufferCount = ann->getHistoryBufferSize();
+
+	vector<vector<double>> samples = vector<vector<double>>();
+
+	for (unsigned i = 0; i < outTrainSeveral.size(); i++)
+	{
+		if (ann->useNovelty)
+		{
+			for (NeuralNetwork::NoveltyBufferOccupant *occupant : ann->getNoveltyBuffer())
+				samples.push_back(occupant->experience);
+		}
+		else
+		{
+			for (vector<double> sample : ann->getHistoryBuffer())
+				samples.push_back(sample);
+		}
+
+		unsigned sampleCount = outTrainSeveral[i]->sampleUsageCount;
+
+		if (sampleCount > historyBufferCount)
+			sampleCount = historyBufferCount;
+
+		for (unsigned y = 0; y < sampleCount; y++)
+		{
+			//Select a random sample.
+			//vector<double> sample = samples.ElementAt(NeuralNetwork.rand.Next(samples.Count)); // TODO: MABE RANDOM
+			//samples.erase(sample);
+			unsigned index = rand() % samples.size(); // TODO: MABE RANDOM
+			vector<double> sample = samples[index];
+			samples.erase(samples.begin() + index);
+
+			ann->SetExperience(sample);
+			ann->PropagateSignal();
+
+			outTrainSeveral[i]->UpdateAverages();
+
+			error += outTrainSeveral[i]->Train();
+		}
+
+		//Divide by the number of samples used.
+		error /= sampleCount;
+
+		samples.clear();
+	}
+
+	return error;
+}
+
+unsigned NeuronGroup::GetNeuronCount()
+{
+	unsigned count = (unsigned)neurons.size();
+
+	for (unsigned i = 0; i < outgoingGroups.size(); i++)
+	{
+		if (outgoingGroups[i]->UsesBiasWeights())
+			return count + 1;
+	}
+
+	return count;
+}
+
+vector<double> NeuronGroup::GetWeights(NeuronGroup::Identifier toGroup)
+{
+	for (unsigned i = 0; i < outgoingGroups.size(); i++)
+	{
+		if (outgoingGroups[i]->IsConnectedTo(toGroup))
+			return outgoingGroups[i]->GetWeights();
+	}
+
+	return vector<double>();
+}
+
+vector<NeuronGroup::Identifier> NeuronGroup::GetGroupsConnected()
+{
+	vector<NeuronGroup::Identifier> groupsConnected = vector<NeuronGroup::Identifier>(outgoingGroups.size());
+
+	for (unsigned i = 0; i < outgoingGroups.size(); i++)
+	{
+		NeuronGroup::Identifier ident;
+		ident.type = outgoingGroups[i]->GetOutputGroupType();
+		ident.index = outgoingGroups[i]->GetOutputGroupIndex();
+
+		// does not contain ident
+		if (find(groupsConnected.begin(), groupsConnected.end(), ident) == groupsConnected.end())
+			groupsConnected.push_back(ident);
+	}
+
+	return groupsConnected;
+}
+
+//Returns true if the neuron was able to be removed, false otherwise.
+bool NeuronGroup::RemoveNeuron(unsigned index)
+{
+	if (index < neurons.size())
+	{
+		neurons.erase(neurons.begin() + index);
+		return true;
+	}
+	else
+		return false;
+}
+
+double NeuronGroup::GetReconstructionError()
+{
+	double error = 0.0;
+
+	for (unsigned i = 0; i < outgoingGroups.size(); i++)
+		error += outgoingGroups[i]->GetReconstructionError();
+
+	return error;
+}				
