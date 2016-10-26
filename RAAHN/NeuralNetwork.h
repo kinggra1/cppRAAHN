@@ -325,7 +325,7 @@ private:
 	double outputNoiseRange;
 	double weightNoiseRange;
 	double averageError;
-	vector<vector<NeuronGroup*>> allListGroups;
+	vector<vector<NeuronGroup*>*> allListGroups;
 	vector<NeuronGroup*> inputGroups;
 	vector<NeuronGroup*> hiddenGroups;
 	vector<NeuronGroup*> outputGroups;

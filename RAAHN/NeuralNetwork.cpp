@@ -142,10 +142,10 @@ void NeuralNetwork::Reset()
 {
 	for (unsigned x = 0; x < allListGroups.size(); x++)
 	{
-		for (unsigned y = 0; y < allListGroups[x].size(); y++)
+		for (unsigned y = 0; y < allListGroups[x]->size(); y++)
 		{
-			allListGroups[x][y]->Reset();
-			allListGroups[x][y]->ResetOutgoingGroups();
+			(*allListGroups[x])[y]->Reset();
+			(*allListGroups[x])[y]->ResetOutgoingGroups();
 		}
 	}
 
@@ -203,8 +203,8 @@ bool NeuralNetwork::ConnectGroups(NeuronGroup::Identifier *input, NeuronGroup::I
 	if (!VerifyIdentifier(input) || !VerifyIdentifier(output))
 		return false;
 
-	NeuronGroup *iGroup = allListGroups[(int)input->type][(int)input->index];
-	NeuronGroup *oGroup = allListGroups[(int)output->type][(int)output->index];
+	NeuronGroup *iGroup = (*allListGroups[(int)input->type])[(int)input->index];
+	NeuronGroup *oGroup = (*allListGroups[(int)output->type])[(int)output->index];
 
 	ConnectionGroup *cGroup = new ConnectionGroup(this, iGroup, oGroup, useBias);
 	cGroup->sampleUsageCount = sampleCount;
@@ -246,7 +246,7 @@ unsigned NeuralNetwork::GetGroupNeuronCount(NeuronGroup::Identifier *ident)
 	if (!VerifyIdentifier(ident))
 		return 0;
 
-	return allListGroups[(int)ident->type][ident->index]->GetNeuronCount();
+	return (*allListGroups[(int)ident->type])[ident->index]->GetNeuronCount();
 }
 
 //Returns the index of the neuron group.
@@ -309,10 +309,10 @@ double NeuralNetwork::GetNeuronValue(NeuronGroup::Identifier *ident, unsigned ne
 	int typei = (int)ident->type;
 	int indexi = (int)ident->index;
 
-	if (neuronIndex >= allListGroups[typei][indexi]->neurons.size())
+	if (neuronIndex >= (*allListGroups[typei])[indexi]->neurons.size())
 		return std::numeric_limits<double>::quiet_NaN();
 
-	return allListGroups[typei][indexi]->neurons[(int)neuronIndex];
+	return (*allListGroups[typei])[indexi]->neurons[(int)neuronIndex];
 }
 
 //Returns double.Nan if the neuron or neuron group does not exist.
@@ -374,8 +374,8 @@ vector<double> NeuralNetwork::GetNeuronValues(NeuronGroup::Identifier *nGroup)
 
 	vector<double> neuronValues = vector<double>();
 
-	for (unsigned i = 0; i < allListGroups[(int)nGroup->type][nGroup->index]->neurons.size(); i++)
-		neuronValues.push_back(allListGroups[(int)nGroup->type][nGroup->index]->neurons[i]);
+	for (unsigned i = 0; i < (*allListGroups[(int)nGroup->type])[nGroup->index]->neurons.size(); i++)
+		neuronValues.push_back((*allListGroups[(int)nGroup->type])[nGroup->index]->neurons[i]);
 
 	return neuronValues;
 }
@@ -386,7 +386,7 @@ vector<double> NeuralNetwork::GetWeights(NeuronGroup::Identifier *fromGroup, Neu
 	if (!VerifyIdentifier(fromGroup) || !VerifyIdentifier(toGroup))
 		return vector<double>();
 
-	return allListGroups[(int)fromGroup->type][fromGroup->index]->GetWeights(toGroup);
+	return (*allListGroups[(int)fromGroup->type])[fromGroup->index]->GetWeights(toGroup);
 }
 
 //Returns the Ids of all groups connected by outgoing connections to the specifed group.
@@ -395,7 +395,7 @@ vector<NeuronGroup::Identifier> NeuralNetwork::GetGroupsConnected(NeuronGroup::I
 	if (!VerifyIdentifier(connectedTo))
 		return vector<NeuronGroup::Identifier>();
 
-	return allListGroups[(int)connectedTo->type][connectedTo->index]->GetGroupsConnected();
+	return (*allListGroups[(int)connectedTo->type])[connectedTo->index]->GetGroupsConnected();
 }
 
 //Constructs NeuralNetwork.
@@ -422,15 +422,15 @@ void NeuralNetwork::Construct(unsigned historySize, double outputNoiseMag, doubl
 
 	errorBuffer = deque<double>(historyBufferSizei);
 
-	allListGroups = vector<vector<NeuronGroup*>>();
+	allListGroups = vector<vector<NeuronGroup*>*>();
 
 	inputGroups = vector<NeuronGroup*>();
 	hiddenGroups = vector<NeuronGroup*>();
 	outputGroups = vector<NeuronGroup*>();
 
-	allListGroups.push_back(inputGroups);
-	allListGroups.push_back(hiddenGroups);
-	allListGroups.push_back(outputGroups);
+	allListGroups.push_back(&inputGroups);
+	allListGroups.push_back(&hiddenGroups);
+	allListGroups.push_back(&outputGroups);
 }
 
 //Set the inputs of the neural network to a given experience.
@@ -649,7 +649,7 @@ bool NeuralNetwork::VerifyIdentifier(NeuronGroup::Identifier *ident)
 	if (!VerifyType(ident->type))
 		return false;
 
-	if (ident->index < 0 || ident->index >= (int)allListGroups[(int)ident->type].size())
+	if (ident->index < 0 || ident->index >= (int)allListGroups[(int)ident->type]->size())
 		return false;
 
 	return true;
